@@ -22,7 +22,15 @@ def combine_text(row):
     title = str(row["Title"])
     ingredients = str(row["Ingredients"])
     steps = str(row["Steps"])
-    return f"Title: {title}. Ingredients: {ingredients}. Steps: {steps}"
+
+    # Ingredients diberi bobot lebih besar dengan diulang 3x.
+    weighted_ingredients = f"{ingredients}. {ingredients}. {ingredients}."
+
+    return (
+        f"Title: {title}. "
+        f"Ingredients: {weighted_ingredients} "
+        f"Steps: {steps}"
+    )
 
 data["text"] = data.apply(combine_text, axis=1)
 
