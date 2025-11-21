@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import difflib
+import re
 
 # 1. Load data & embeddings yang sudah disiapkan
 data = pd.read_pickle("recipes_data.pkl")
@@ -44,6 +45,23 @@ def _is_ingredient_duplicate(candidate_tokens, accepted_tokens, threshold=0.8):
         if jaccard >= threshold:
             return True
     return False
+
+def _title_bucket(title):
+    """
+    Bucket titles so near-identical variants collapse.
+    For rawon/etc, use dish + detected protein; otherwise use first two tokens.
+    """
+    tokens = re.findall(r"[a-z0-9]+", title.lower())
+    if not tokens:
+        return title.lower().strip()
+
+    proteins = {"sapi", "ayam", "kambing", "ikan", "udang", "bebek", "daging"}
+    if "rawon" in tokens:
+        protein = next((t for t in tokens if t in proteins), "default")
+        return f"rawon-{protein}"
+
+    # generic fallback: first two tokens
+    return "-".join(tokens[:2])
 
 def find_best_title_index(food_title, cutoff=0.6):
     """
@@ -100,6 +118,7 @@ def recommend_similar_foods(food_title, top_n=5):
     # Ambil Top-N sambil mengabaikan judul duplikat dan resep dengan bahan yang hampir sama
     results = []
     seen_titles = set()
+    seen_buckets = set()
     kept_ingredient_tokens = []
     for i in similar_indices:
         title = data.iloc[i]["Title"]
@@ -107,11 +126,16 @@ def recommend_similar_foods(food_title, top_n=5):
         if key in seen_titles:
             continue
 
+        bucket = _title_bucket(title)
+        if bucket in seen_buckets:
+            continue
+
         candidate_tokens = _ingredient_tokens(data.iloc[i].get("Ingredients", ""))
         if _is_ingredient_duplicate(candidate_tokens, kept_ingredient_tokens):
             continue
 
         seen_titles.add(key)
+        seen_buckets.add(bucket)
         kept_ingredient_tokens.append(candidate_tokens)
         results.append({
             "Title": title,
