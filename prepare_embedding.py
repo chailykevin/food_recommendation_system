@@ -35,7 +35,11 @@ def combine_text(row):
 data["text"] = data.apply(combine_text, axis=1)
 
 # optional: lowercase untuk pencarian judul lebih enak
-data["Title_lower"] = data["Title"].str.lower()
+# strip untuk menghindari duplikat judul karena spasi
+data["Title_lower"] = data["Title"].str.lower().str.strip()
+
+# hilangkan duplikat judul, simpan baris pertama saja
+data = data.drop_duplicates(subset="Title_lower", keep="first").reset_index(drop=True)
 
 # 3. Load Sentence-BERT dan encode semua resep
 model_name = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"

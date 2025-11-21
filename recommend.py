@@ -10,7 +10,9 @@ embeddings = np.load("recipes_embeddings.npy")
 
 # pastikan Title_lower ada; kalau belum ada di pkl, bisa bikin lagi:
 if "Title_lower" not in data.columns:
-    data["Title_lower"] = data["Title"].str.lower()
+    data["Title_lower"] = data["Title"].str.lower().str.strip()
+else:
+    data["Title_lower"] = data["Title_lower"].str.strip()
 
 def find_best_title_index(food_title, cutoff=0.6):
     """
@@ -64,15 +66,21 @@ def recommend_similar_foods(food_title, top_n=5):
     # Hapus dirinya sendiri
     similar_indices = [i for i in similar_indices if i != idx]
 
-    # Ambil Top-N
-    top_indices = similar_indices[:top_n]
-
+    # Ambil Top-N sambil mengabaikan duplikat judul (case-insensitive, trim)
     results = []
-    for i in top_indices:
+    seen_titles = set()
+    for i in similar_indices:
+        title = data.iloc[i]["Title"]
+        key = title.lower().strip()
+        if key in seen_titles:
+            continue
+        seen_titles.add(key)
         results.append({
-            "Title": data.iloc[i]["Title"],
+            "Title": title,
             "Similarity": float(sim_scores[i])
         })
+        if len(results) == top_n:
+            break
 
     return results
 
