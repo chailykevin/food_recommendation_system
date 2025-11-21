@@ -14,6 +14,37 @@ if "Title_lower" not in data.columns:
 else:
     data["Title_lower"] = data["Title_lower"].str.strip()
 
+def _ingredient_tokens(text):
+    """Tokenize ingredient string: lowercase, split by comma/semicolon, strip."""
+    if pd.isna(text):
+        return set()
+    # split on comma/semicolon and strip each piece
+    parts = []
+    for chunk in str(text).replace(";", ",").split(","):
+        token = chunk.strip().lower()
+        if token:
+            parts.append(token)
+    return set(parts)
+
+def _is_ingredient_duplicate(candidate_tokens, accepted_tokens, threshold=0.8):
+    """
+    Check if candidate's ingredients are too similar to any already accepted.
+    Uses Jaccard similarity; if above threshold, treat as duplicate.
+    """
+    if not candidate_tokens:
+        return False
+    for tokens in accepted_tokens:
+        if not tokens:
+            continue
+        inter = len(candidate_tokens & tokens)
+        union = len(candidate_tokens | tokens)
+        if union == 0:
+            continue
+        jaccard = inter / union
+        if jaccard >= threshold:
+            return True
+    return False
+
 def find_best_title_index(food_title, cutoff=0.6):
     """
     Mencari judul yang paling mirip dengan input user menggunakan fuzzy matching.
@@ -66,15 +97,22 @@ def recommend_similar_foods(food_title, top_n=5):
     # Hapus dirinya sendiri
     similar_indices = [i for i in similar_indices if i != idx]
 
-    # Ambil Top-N sambil mengabaikan duplikat judul (case-insensitive, trim)
+    # Ambil Top-N sambil mengabaikan judul duplikat dan resep dengan bahan yang hampir sama
     results = []
     seen_titles = set()
+    kept_ingredient_tokens = []
     for i in similar_indices:
         title = data.iloc[i]["Title"]
         key = title.lower().strip()
         if key in seen_titles:
             continue
+
+        candidate_tokens = _ingredient_tokens(data.iloc[i].get("Ingredients", ""))
+        if _is_ingredient_duplicate(candidate_tokens, kept_ingredient_tokens):
+            continue
+
         seen_titles.add(key)
+        kept_ingredient_tokens.append(candidate_tokens)
         results.append({
             "Title": title,
             "Similarity": float(sim_scores[i])
