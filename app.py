@@ -160,6 +160,7 @@ def recommend_similar_foods(food_title, top_n=5):
             "Similarity": float(sim_scores[i]),
             "Ingredients": str(data.iloc[i]["Ingredients"]),
             "Steps": str(data.iloc[i]["Steps"]),
+            "URL": str(data.iloc[i].get("URL", "")),
         })
 
         if len(results) >= top_n:
@@ -222,6 +223,7 @@ if st.button("Cari rekomendasi"):
                     {
                         "Title": r["Title"],
                         "Similarity": f"{r['Similarity']:.4f}",
+                        "URL": r.get("URL", ""),
                     }
                     for r in recs
                 ])
@@ -231,6 +233,8 @@ if st.button("Cari rekomendasi"):
                 st.write("Detail setiap rekomendasi:")
                 for r in recs:
                     with st.expander(f"{r['Title']} (similarity: {r['Similarity']:.4f})"):
+                        if r.get("URL"):
+                            st.markdown(f"[Source URL]({r['URL']})")
                         st.markdown("**Ingredients:**")
                         st.markdown(_format_ingredients(r["Ingredients"]))
                         st.markdown("**Steps:**")
