@@ -211,7 +211,8 @@ if st.button("Cari rekomendasi"):
         if query_title is None or recs is None:
             st.error(f"Tidak ditemukan judul yang cukup mirip dengan: '{food_query}'.")
         else:
-            st.subheader(f"Hasil untuk: **{query_title}**")
+            # Tampilkan sesuai input user, bukan judul yang sudah dicocokkan
+            st.subheader(f"Hasil untuk: **{food_query}**")
 
             if len(recs) == 0:
                 st.info("Tidak ada rekomendasi lain yang cukup berbeda judulnya.")
