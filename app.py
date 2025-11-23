@@ -114,11 +114,23 @@ def _format_steps(text):
     return "\n".join(f"{i+1}. {s}" for i, s in enumerate(steps))
 
 
+def _matches_filters(title, ingredients, mood, protein):
+    """Simple substring filters for mood/protein; blank filters are ignored."""
+    title_l = str(title).lower()
+    ing_l = str(ingredients).lower()
+
+    if mood and (mood not in title_l and mood not in ing_l):
+        return False
+    if protein and (protein not in title_l and protein not in ing_l):
+        return False
+    return True
+
+
 # ============================================================
 # 3. Fungsi rekomendasi (pakai dedup judul seperti di recommend.py)
 # ============================================================
 
-def recommend_similar_foods(food_title, top_n=5):
+def recommend_similar_foods(food_title, top_n=5, mood=None, protein=None):
     idx, best_match = find_best_title_index(food_title)
 
     if idx is None:
@@ -147,7 +159,11 @@ def recommend_similar_foods(food_title, top_n=5):
         if bucket in seen_buckets:
             continue
 
-        candidate_tokens = _ingredient_tokens(data.iloc[i].get("Ingredients", ""))
+        ingredients_text = data.iloc[i].get("Ingredients", "")
+        if not _matches_filters(title, ingredients_text, mood, protein):
+            continue
+
+        candidate_tokens = _ingredient_tokens(ingredients_text)
         if _is_ingredient_duplicate(candidate_tokens, kept_ingredient_tokens):
             continue
 
@@ -181,17 +197,20 @@ st.set_page_config(
 
 st.title("Indonesian Food Recommendation System")
 st.write(
-    "Masukkan nama makanan (misalnya: *Rawon*, *Nasi Goreng*, dll), "
-    "lalu sistem akan menampilkan beberapa rekomendasi makanan yang mirip."
+    "Masukkan suasana/mood (misal: *pedas*, *manis*, *goreng*) dan sumber protein "
+    "(misal: *ayam*, *sapi*, *udang*). Sistem akan mencari resep paling mirip "
+    "yang cocok dengan preferensi tersebut."
 )
 
-col1, col2 = st.columns([2, 1])
+col1, col2, col3 = st.columns([2, 2, 1])
 
 with col1:
-    default_example = "Rawon"
-    food_query = st.text_input("Nama makanan", value=default_example)
+    mood = st.text_input("Mood (rasa/teknik)", value="pedas")
 
 with col2:
+    protein = st.text_input("Protein utama", value="ayam")
+
+with col3:
     top_n = st.number_input(
         "Jumlah rekomendasi",
         min_value=1,
@@ -202,17 +221,30 @@ with col2:
 
 if st.button("Cari rekomendasi"):
 
-    if not food_query.strip():
-        st.warning("Masukkan nama makanan terlebih dahulu.")
+    mood = mood.strip().lower()
+    protein = protein.strip().lower()
+
+    if not mood and not protein:
+        st.warning("Isi minimal salah satu: mood atau protein.")
     else:
+        query_phrase = " ".join([p for p in [mood, protein] if p]).strip()
+
         with st.spinner("Menghitung kemiripan resep..."):
-            query_title, recs = recommend_similar_foods(food_query, top_n=top_n)
+            query_title, recs = recommend_similar_foods(
+                query_phrase,
+                top_n=top_n,
+                mood=mood,
+                protein=protein
+            )
 
         if query_title is None or recs is None:
-            st.error(f"Tidak ditemukan judul yang cukup mirip dengan: '{food_query}'.")
+            st.error(
+                f"Tidak ditemukan resep yang cukup mirip untuk: '{query_phrase}'. "
+                "Coba variasikan mood atau protein."
+            )
         else:
             # Tampilkan sesuai input user, bukan judul yang sudah dicocokkan
-            st.subheader(f"Hasil untuk: **{food_query}**")
+            st.subheader(f"Hasil untuk preferensi: **{query_phrase}**")
 
             if len(recs) == 0:
                 st.info("Tidak ada rekomendasi lain yang cukup berbeda judulnya.")
@@ -241,4 +273,4 @@ if st.button("Cari rekomendasi"):
                         st.markdown("**Steps:**")
                         st.markdown(_format_steps(r["Steps"]))
 else:
-    st.info("Masukkan nama makanan lalu klik tombol 'Cari rekomendasi'.")
+    st.info("Masukkan mood/protein lalu klik tombol 'Cari rekomendasi'.")
