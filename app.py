@@ -205,10 +205,11 @@ st.write(
 col1, col2, col3 = st.columns([2, 2, 1])
 
 with col1:
-    mood = st.text_input("Mood (rasa/teknik)", value="pedas")
+    protein_options = ["ayam", "ikan", "kambing", "sapi", "tahu", "telur", "tempe", "udang"]
+    protein = st.selectbox("Protein utama", protein_options, index=0)
 
 with col2:
-    protein = st.text_input("Protein utama", value="ayam")
+    mood = st.text_input("Rasa atau teknik masak", value="pedas")
 
 with col3:
     top_n = st.number_input(
@@ -227,7 +228,8 @@ if st.button("Cari rekomendasi"):
     if not mood and not protein:
         st.warning("Isi minimal salah satu: mood atau protein.")
     else:
-        query_phrase = " ".join([p for p in [mood, protein] if p]).strip()
+        # Build query phrase prioritizing protein then mood to align with UI order
+        query_phrase = " ".join([p for p in [protein, mood] if p]).strip()
 
         with st.spinner("Menghitung kemiripan resep..."):
             query_title, recs = recommend_similar_foods(
