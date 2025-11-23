@@ -49,18 +49,12 @@ def _is_ingredient_duplicate(candidate_tokens, accepted_tokens, threshold=0.8):
 def _title_bucket(title):
     """
     Bucket titles so near-identical variants collapse.
-    For rawon/etc, use dish + detected protein; otherwise use first two tokens.
+    Uses first two tokens as a simple bucket key.
     """
     tokens = re.findall(r"[a-z0-9]+", title.lower())
     if not tokens:
         return title.lower().strip()
 
-    proteins = {"sapi", "ayam", "kambing", "ikan", "udang", "bebek", "daging"}
-    if "rawon" in tokens:
-        protein = next((t for t in tokens if t in proteins), "default")
-        return f"rawon-{protein}"
-
-    # generic fallback: first two tokens
     return "-".join(tokens[:2])
 
 def find_best_title_index(food_title, cutoff=0.6):
