@@ -14,8 +14,8 @@ for csv_file in data_folder.glob("*.csv"):
 
 data = pd.concat(all_dfs, ignore_index=True)
 
-# keep only needed columns
-data = data[["Title", "Ingredients", "Steps"]]
+# keep only needed columns (include URL so apps can link out)
+data = data[["Title", "Ingredients", "Steps", "URL"]]
 
 # 2. Buat kolom text gabungan
 def combine_text(row):

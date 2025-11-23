@@ -139,7 +139,10 @@ def recommend_similar_foods(food_title, top_n=5):
         kept_ingredient_tokens.append(candidate_tokens)
         results.append({
             "Title": title,
-            "Similarity": float(sim_scores[i])
+            "Similarity": float(sim_scores[i]),
+            "Ingredients": str(data.iloc[i].get("Ingredients", "")),
+            "Steps": str(data.iloc[i].get("Steps", "")),
+            "URL": str(data.iloc[i].get("URL", "")),
         })
         if len(results) == top_n:
             break
